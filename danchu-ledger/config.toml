@@ -1,0 +1,200 @@
+# ─────────────────────────────────────────────────────────────
+# 첫단추 시연용 원장 생성기 — 설정 파일
+# 이 파일만 고치고 `python3 generate.py` 를 다시 돌리면 원장이 새로 만들어져요.
+# 금액은 모두 원 단위, 100원 단위로 써 주세요.
+# 날짜는 2026-10-19 처럼, "달"은 "2026-10" 처럼 씁니다.
+# "정산 달 2026-10" = 9월 26일 ~ 10월 25일 결제분을 10월 25일에 정산하는 기간
+# ─────────────────────────────────────────────────────────────
+
+[demo]
+today = 2026-10-19      # 데모 기준일. 이 날까지의 기록만 만들어요
+seed = 42               # 같은 숫자면 매번 똑같은 원장이 나와요. 바꾸면 매일 결제 내역이 달라져요
+bank_name = "첫단추은행"  # 시연용 가상 은행 이름
+
+[rules]                 # 서비스 규칙 — 보통은 고치지 않아요
+allowance_day = 1       # 용돈일
+payday = 25             # 결제일
+settle_time = "18:00"   # 결제일 자동 정산 시각
+mission_cap_ratio = 0.30  # 한 달 미션 보상 상한 (용돈의 30%)
+
+# 매일 쓰는 돈의 모양. 실제 금액은 그달 "얼마나 쓸지"에 맞춰 생성기가 조절해요
+# per_week = 일주일에 몇 번, fixed = 금액이 정해진 항목(교통)은 조절하지 않음
+[[spend]]
+category = "교통"
+merchants = ["버스", "지하철"]
+min = 1500
+max = 1500
+per_week = 2.5
+weekday_only = true
+fixed = true
+vacation_factor = 0.3   # 방학(1·2·7·8월)에는 30%만
+
+[[spend]]
+category = "식사"
+merchants = ["편의점", "분식집", "패스트푸드", "김밥집"]
+min = 2500
+max = 9000
+per_week = 4
+
+[[spend]]
+category = "카페"
+merchants = ["카페"]
+min = 2000
+max = 6500
+per_week = 1.5
+
+[[spend]]
+category = "쇼핑"
+merchants = ["드럭스토어", "생활용품점", "온라인 쇼핑몰"]
+min = 3000
+max = 25000
+per_week = 0.6
+
+[[spend]]
+category = "문화"
+merchants = ["영화관", "서점", "코인노래방"]
+min = 2000
+max = 13000
+per_week = 0.4
+
+
+# ═════════════════════════════════════════════════════════════
+# 가족 A — 하늘 (진행 중: 만 18세, 곧 19세)
+# ═════════════════════════════════════════════════════════════
+[[family]]
+id = "A"
+child_name = "하늘"
+child_birth = 2007-11-02
+parent_name = "김지수"
+child_account = "3333-01-4567"
+parent_account = "3333-01-1234"
+first_cycle = "2025-11"     # 첫 결제일 정산이 있는 달
+last_cycle = "2026-10"      # 마지막 달 (데모 기준일이 이 달 안이면 '진행 중'으로 끝남)
+card_limit = 100000
+spend_ratio = [0.86, 0.95]  # 평소 달: 이번 달 들어온 돈 중 몇 %를 쓰는지 (범위 안에서 무작위)
+
+allowance = [               # 용돈 — from 달의 1일부터 이 금액
+  { from = "2025-11", amount = 60000 },
+  { from = "2026-03", amount = 70000, reason = "대학 입학" },
+  { from = "2026-11", amount = 73000, reason = "물가 · AI 제안 적용" },
+]
+
+missions_paid = [           # 이미 끝나서 보상이 들어간 미션 (보상은 '이번 달 용돈' 주머니로)
+  { date = 2026-01-20, name = "설거지 일주일", amount = 3000 },
+  { date = 2026-07-15, name = "가격 비교 장보기", amount = 3500 },
+  { date = 2026-08-10, name = "설거지 일주일", amount = 3000 },
+  { date = 2026-10-02, name = "분리수거 한 달 맡기 (9월분)", amount = 3000 },
+]
+
+# 데모 기준일에 진행 중인 미션 (미션 화면용)
+missions_now = [
+  { name = "분리수거 한 달 맡기", type = "집안일 돕기", amount = 3000, status = "진행 중", progress = 80, opened = 2026-10-01, due = 2026-10-31 },
+  { name = "이번 주 영수증 정리하기", type = "금융 배우기", amount = 3000, status = "확인 기다리는 중", opened = 2026-10-12, submitted = 2026-10-18 },
+  { name = "설거지 일주일", type = "집안일 돕기", amount = 3000, status = "새 미션", opened = 2026-10-19, due = 2026-10-25 },
+  { name = "베란다 화분 물 주기 · 한 달", type = "집안일 돕기", amount = 3000, status = "아이가 제안함", proposed = 2026-10-17 },
+]
+
+[[family.month]]            # 이야기표: 특별한 일이 있는 달만 적어요
+cycle = "2026-03"
+result = "부족"             # "완납" 또는 "부족"
+shortfall = 5200
+resolve = "자동"            # "스스로" 또는 "자동"(다음 용돈에서 자동 정산)
+note = "대학 입학 준비로 지출이 많았어요"
+events = [
+  { date = 2026-02-27, merchant = "문구점", category = "쇼핑", amount = 18000 },
+  { date = 2026-03-03, merchant = "온라인 쇼핑몰", category = "쇼핑", amount = 26000, memo = "입학 준비" },
+]
+
+[[family.month]]
+cycle = "2026-09"
+result = "완납"
+bill = 61500                # 이 달 청구액을 정확히 이 금액으로
+note = "9월 브리핑: 61,500원 사용, 8,500원 남김"
+
+[[family.month]]
+cycle = "2026-10"           # 진행 중인 달
+bill_until_today = 79500    # 데모 기준일까지 청구 예정액
+note = "친구 생일로 큰 지출, D-6에 부족 예상"
+events = [
+  { date = 2026-10-17, merchant = "드럭스토어", category = "선물", amount = 22000, memo = "친구 생일 선물" },
+  { date = 2026-10-17, merchant = "패밀리 레스토랑", category = "식사", amount = 18500, memo = "친구 생일" },
+]
+
+[family.expect]             # 이야기대로 나왔는지 리포트에서 확인할 값
+paid_months = 10            # 완납한 달 수 (진행 중인 달 제외)
+settled_months = 11
+current_streak = 6
+longest_streak = 6
+bill_until_today = 79500
+
+
+# ═════════════════════════════════════════════════════════════
+# 가족 B — 바다 (기록 완료: 만 19세, 확인서 발급 가능)
+# ═════════════════════════════════════════════════════════════
+[[family]]
+id = "B"
+child_name = "바다"
+child_birth = 2007-10-03
+parent_name = "박서연"
+child_account = "3333-02-7788"
+parent_account = "3333-02-5566"
+first_cycle = "2024-07"
+last_cycle = "2026-09"      # 만 19세 직전 달까지
+card_limit = 100000
+spend_ratio = [0.86, 0.94]
+spend_ratio_periods = [     # 기간별로 다르게: 최근 1년은 더 아껴 썼어요
+  { from = "2025-10", to = "2026-09", range = [0.70, 0.78] },
+]
+
+allowance = [
+  { from = "2024-07", amount = 50000 },
+  { from = "2025-03", amount = 60000, reason = "고3" },
+  { from = "2026-03", amount = 70000, reason = "대학 입학" },
+]
+
+missions_paid = [
+  { date = 2024-10-27, name = "분리수거 한 달 맡기", amount = 5000 },
+  { date = 2024-12-20, name = "설거지 일주일", amount = 3000 },
+  { date = 2025-07-10, name = "가격 비교 장보기", amount = 3500 },
+  { date = 2025-08-12, name = "설거지 일주일", amount = 3000 },
+  { date = 2026-01-15, name = "영수증 정리하기", amount = 3000 },
+  { date = 2026-07-20, name = "가격 비교 장보기", amount = 3500 },
+]
+
+missions_now = []
+
+[[family.month]]
+cycle = "2024-10"
+result = "부족"
+shortfall = 4600
+resolve = "스스로"
+resolve_days = 3            # 결제일에서 며칠 뒤에 갚았는지
+resolve_from = "이번 달 용돈"   # 10/27 미션 보상으로 받은 돈에서
+note = "시험 끝나고 많이 썼어요. 분리수거 미션으로 번 돈으로 3일 만에 갚음"
+
+[[family.month]]
+cycle = "2025-01"
+result = "부족"
+shortfall = 7200
+resolve = "스스로"
+resolve_days = 5
+resolve_from = "모은 돈"
+note = "방학 중 지출. 모은 돈으로 5일 만에 갚음"
+
+[[family.month]]
+cycle = "2025-06"
+result = "부족"
+shortfall = 3800
+resolve = "스스로"
+resolve_days = 5
+resolve_from = "모은 돈"
+note = "고3 1학기 기말 뒤. 모은 돈으로 5일 만에 갚음"
+
+[family.expect]
+paid_months = 24
+settled_months = 27
+current_streak = 15
+longest_streak = 15
+recent12_paid = 12
+self_resolved = 3
+resolve_days = [3, 5, 5]

@@ -1,0 +1,28 @@
+[
+ {
+  "id": "child_a",
+  "family": "A",
+  "name": "하늘",
+  "role": "자녀"
+ },
+ {
+  "id": "parent_a",
+  "family": "A",
+  "name": "김지수",
+  "role": "부모",
+  "child_id": "child_a"
+ },
+ {
+  "id": "child_b",
+  "family": "B",
+  "name": "바다",
+  "role": "본인"
+ },
+ {
+  "id": "parent_b",
+  "family": "B",
+  "name": "박서연",
+  "role": "부모",
+  "child_id": "child_b"
+ }
+]
