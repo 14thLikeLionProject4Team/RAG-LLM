@@ -23,8 +23,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "out"
 
-POCKET_NOW = "이번 달 용돈"
-POCKET_SAVED = "모은 돈"
+POCKET_NOW = "이번 달 쓸 수 있는 돈"
+POCKET_LEFT = "지난달까지 남은 돈"
 
 TYPE_LABEL = {
     "ALLOWANCE": "용돈 입금",
@@ -265,7 +265,7 @@ def build_family(cfg, fam):
                 rng_range = p["range"]
         return rng.uniform(*rng_range)
 
-    savings = 0
+    leftover = 0
     prev_short = None
     monthly = []
 
@@ -308,14 +308,14 @@ def build_family(cfg, fam):
             if repay["source"] == POCKET_NOW:
                 before = sum(x["amount"] for x in mis if x["date"] < repay["date"])
                 if before < repay["amount"]:
-                    raise StoryError(f"{repay['cycle']}: 갚는 날까지 '이번 달 용돈'에 {won(before)}뿐이라 {won(repay['amount'])}을 갚을 수 없어요 (미션 보상이 먼저 들어와야 해요)")
+                    raise StoryError(f"{repay['cycle']}: 갚는 날까지 '이번 달 쓸 수 있는 돈'에 {won(before)}뿐이라 {won(repay['amount'])}을 갚을 수 없어요 (미션 보상이 먼저 들어와야 해요)")
                 repay_from_now = repay["amount"]
             else:
-                if savings < repay["amount"]:
-                    raise StoryError(f"{repay['cycle']}: 모은 돈이 {won(savings)}뿐이라 {won(repay['amount'])}을 갚을 수 없어요")
-                savings -= repay["amount"]
+                if leftover < repay["amount"]:
+                    raise StoryError(f"{repay['cycle']}: 지난달까지 남은 돈이 {won(leftover)}뿐이라 {won(repay['amount'])}을 갚을 수 없어요")
+                leftover -= repay["amount"]
 
-        B = A - R + Mi - repay_from_now   # 정산 직전 '이번 달 용돈'
+        B = A - R + Mi - repay_from_now   # 정산 직전 '이번 달 쓸 수 있는 돈'
 
         # 목표 청구액
         if current:
@@ -372,15 +372,15 @@ def build_family(cfg, fam):
                "balance_before_settle": B, "bill": T}
 
         if current:
-            row.update({"status": "진행 중", "settled": None, "shortfall": None, "moved_to_saved": None,
-                        "keep_ratio": None, "saved_after": savings, "until": today.isoformat()})
+            row.update({"status": "진행 중", "settled": None, "shortfall": None, "moved_to_leftover": None,
+                        "keep_ratio": None, "leftover_after": leftover, "until": today.isoformat()})
             monthly.append(row)
             break
 
         settled = min(B, T)
         short = T - settled
         if m.get("result") == "완납" and short:
-            raise StoryError(f"{ctx}: '완납'인데 청구액 {won(T)}이 이번 달 용돈 {won(B)}보다 커요")
+            raise StoryError(f"{ctx}: '완납'인데 청구액 {won(T)}이 이번 달 쓸 수 있는 돈 {won(B)}보다 커요")
         if m.get("result") == "부족" and short != m["shortfall"] and "bill" not in m:
             raise StoryError(f"{ctx}: 부족 금액이 {won(short)}로 계산됐어요")
 
@@ -392,21 +392,21 @@ def build_family(cfg, fam):
                     memo="다음 용돈 전까지 직접 보내면 해소, 못 보내면 다음 용돈에서 자동 정산",
                     cycle=c, order=1)
             prev_short = {"cycle": c, "amount": short, "resolve": m.get("resolve", "자동"),
-                          "days": m.get("resolve_days", 0), "source": m.get("resolve_from", POCKET_SAVED),
+                          "days": m.get("resolve_days", 0), "source": m.get("resolve_from", POCKET_LEFT),
                           "settle_date": end}
             status = "부족"
         else:
             moved = B - settled
             if moved:
                 led.add(settle_dt + dt.timedelta(minutes=1), "POCKET_MOVE", moved, frm=POCKET_NOW,
-                        to=POCKET_SAVED, memo="결제일 정산 뒤 남은 돈", cycle=c, order=2)
-                savings += moved
+                        to=POCKET_LEFT, memo="결제일 정산 뒤 남은 돈", cycle=c, order=2)
+                leftover += moved
             prev_short = None
             status = "완납"
 
         income = A + Mi
-        row.update({"status": status, "settled": settled, "shortfall": short, "moved_to_saved": moved,
-                    "keep_ratio": round((B - T) / income, 4) if income else None, "saved_after": savings})
+        row.update({"status": status, "settled": settled, "shortfall": short, "moved_to_leftover": moved,
+                    "keep_ratio": round((B - T) / income, 4) if income else None, "leftover_after": leftover})
         monthly.append(row)
 
     # 마지막 달이 부족으로 끝나고 다음 달이 없으면, 처리 결과를 남겨 둠
@@ -444,7 +444,7 @@ def annotate_resolution(rows, monthly):
 
 def simulate(rows, monthly, today, payday, fid):
     """원장을 처음부터 다시 읽어서 규칙대로 맞는지 확인하고, 오늘 기준 숫자를 계산한다."""
-    now, saved = 0, 0
+    now, left = 0, 0
     bills: dict[str, int] = {}
     settled: dict[str, int] = {}
     for r in rows:
@@ -467,13 +467,13 @@ def simulate(rows, monthly, today, payday, fid):
         elif t == "POCKET_MOVE":
             assert a == now, f"{fid} {r['cycle']} 옮길 금액 불일치"
             now -= a
-            saved += a
+            left += a
         elif t == "SHORTFALL_REPAY":
-            if r["from"] == POCKET_SAVED:
-                saved -= a
+            if r["from"] == POCKET_LEFT:
+                left -= a
             else:
                 now -= a
-        assert now >= 0 and saved >= 0, f"{fid} {r['date']} 잔액이 마이너스가 됐어요"
+        assert now >= 0 and left >= 0, f"{fid} {r['date']} 잔액이 마이너스가 됐어요"
     for mrow in monthly:
         assert bills.get(mrow["cycle"], 0) == mrow["bill"], f"{fid} {mrow['cycle']} 청구액 불일치"
 
@@ -484,7 +484,7 @@ def simulate(rows, monthly, today, payday, fid):
         "date": today.isoformat(),
         "open_cycle": open_cycle if bill_open else None,
         "pocket_now": now,
-        "pocket_saved": saved,
+        "pocket_leftover": left,
         "bill_until_today": bill_open,
         "payday": pay_date.isoformat() if bill_open else None,
         "days_to_payday": (pay_date - today).days if bill_open else None,
@@ -559,13 +559,13 @@ def write_family(cfg, fam, rows, monthly, snapshot, resolve_info):
     # 월별 요약 CSV (정답지)
     with open(d / "월별요약.csv", "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
-        w.writerow(["정산 달", "기간", "용돈", "자동 정산(차감)", "미션 보상", "정산 직전 이번 달 용돈",
-                    "청구액", "정산액", "부족", "결과", "모은 돈으로", "남긴 비율", "모은 돈 잔액"])
+        w.writerow(["정산 달", "기간", "용돈", "자동 정산(차감)", "미션 보상", "정산 직전 이번 달 쓸 수 있는 돈",
+                    "청구액", "정산액", "부족", "결과", "남은 돈으로 옮김", "남긴 비율", "지난달까지 남은 돈"])
         for m in monthly:
             w.writerow([m["cycle"], m["period"], m["allowance"], m["auto_recovery"], m["missions"],
                         m["balance_before_settle"], m["bill"], m["settled"], m["shortfall"], m["resolution"],
-                        m["moved_to_saved"],
-                        "" if m["keep_ratio"] is None else f"{m['keep_ratio']*100:.1f}%", m["saved_after"]])
+                        m["moved_to_leftover"],
+                        "" if m["keep_ratio"] is None else f"{m['keep_ratio']*100:.1f}%", m["leftover_after"]])
 
     child_id, parent_id = f"child_{fid}", f"parent_{fid}"
     stats = streaks(monthly)
@@ -577,7 +577,7 @@ def write_family(cfg, fam, rows, monthly, snapshot, resolve_info):
         "parent": {"id": parent_id, "name": fam["parent_name"], "role": "부모"},
         "accounts": {"bank": cfg["demo"].get("bank_name", "첫단추은행"),
                      "child_account": fam["child_account"], "parent_account": fam["parent_account"],
-                     "pockets": [POCKET_NOW, POCKET_SAVED]},
+                     "pockets": [POCKET_NOW, POCKET_LEFT]},
         "card": {"type": "가족 신용카드", "limit": fam.get("card_limit", 100000)},
         "rules": cfg["rules"],
         "allowance_history": [{k: v for k, v in a.items()} for a in fam["allowance"]],
@@ -610,23 +610,23 @@ def write_report(cfg, results):
             L.append("")
         L += [f"원장 {len(rows)}줄 · 카드 결제 {sum(r['type']=='CARD_PAYMENT' for r in rows)}건", ""]
         L += ["### 월별 요약", "",
-              "| 정산 달 | 용돈 | 미션 | 차감 | 정산 직전 | 청구액 | 결과 | 모은 돈으로 | 남긴 비율 | 모은 돈 |",
+              "| 정산 달 | 용돈 | 미션 | 차감 | 정산 직전 | 청구액 | 결과 | 남은 돈으로 옮김 | 남긴 비율 | 지난달까지 남은 돈 |",
               "|---|---:|---:|---:|---:|---:|---|---:|---:|---:|"]
         for m in monthly:
             kr = "" if m["keep_ratio"] is None else f"{m['keep_ratio']*100:.0f}%"
-            moved = "" if m["moved_to_saved"] is None else f"{m['moved_to_saved']:,}"
+            moved = "" if m["moved_to_leftover"] is None else f"{m['moved_to_leftover']:,}"
             minus = m["auto_recovery"] + m["repay_from_now"]
             L.append(f"| {m['cycle']} | {m['allowance']:,} | {m['missions']:,} | {minus:,} | "
                      f"{m['balance_before_settle']:,} | {m['bill']:,} | {m['resolution']} | "
-                     f"{moved} | {kr} | {m['saved_after']:,} |")
+                     f"{moved} | {kr} | {m['leftover_after']:,} |")
         L.append("")
         s = snapshot
         L += ["### 기준일 숫자", "",
-              f"- 이번 달 용돈 주머니: **{won(s['pocket_now'])}**",
-              f"- 모은 돈 주머니: **{won(s['pocket_saved'])}**"]
+              f"- 이번 달 쓸 수 있는 돈: **{won(s['pocket_now'])}**",
+              f"- 지난달까지 남은 돈: **{won(s['pocket_leftover'])}**"]
         if s["bill_until_today"]:
             L += [f"- 청구 예정액({s['open_cycle']}): **{won(s['bill_until_today'])}** · 결제일 {s['payday']} (D-{s['days_to_payday']})",
-                  f"- 단순 차이(이번 달 용돈 − 청구 예정): **{won(s['simple_gap'])}**",
+                  f"- 단순 차이(이번 달 쓸 수 있는 돈 − 청구 예정): **{won(s['simple_gap'])}**",
                   "", "이번 정산 기간 항목별:", ""]
             for k, v in category_totals(rows, s["open_cycle"]).items():
                 L.append(f"- {k} {won(v)}")
