@@ -2,26 +2,26 @@
  {
   "id": "child_a",
   "family": "A",
-  "name": "하늘",
+  "name": "루피",
   "role": "자녀"
  },
  {
   "id": "parent_a",
   "family": "A",
-  "name": "김지수",
+  "name": "루피 엄마",
   "role": "부모",
   "child_id": "child_a"
  },
  {
   "id": "child_b",
   "family": "B",
-  "name": "바다",
+  "name": "뽀로로",
   "role": "본인"
  },
  {
   "id": "parent_b",
   "family": "B",
-  "name": "박서연",
+  "name": "뽀로로 엄마",
   "role": "부모",
   "child_id": "child_b"
  }

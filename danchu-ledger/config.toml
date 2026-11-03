@@ -59,13 +59,13 @@ per_week = 0.4
 
 
 # ═════════════════════════════════════════════════════════════
-# 가족 A — 하늘 (진행 중: 만 18세, 곧 19세)
+# 가족 A — 루피 (진행 중: 만 18세, 곧 19세)
 # ═════════════════════════════════════════════════════════════
 [[family]]
 id = "A"
-child_name = "하늘"
+child_name = "루피"
 child_birth = 2007-11-02
-parent_name = "김지수"
+parent_name = "루피 엄마"
 child_account = "3333-01-4567"
 parent_account = "3333-01-1234"
 first_cycle = "2025-11"     # 첫 결제일 정산이 있는 달
@@ -79,7 +79,7 @@ allowance = [               # 용돈 — from 달의 1일부터 이 금액
   { from = "2026-11", amount = 73000, reason = "물가 · AI 제안 적용" },
 ]
 
-missions_paid = [           # 이미 끝나서 보상이 들어간 미션 (보상은 '이번 달 용돈' 주머니로)
+missions_paid = [           # 이미 끝나서 보상이 들어간 미션 (보상은 '이번 달 쓸 수 있는 돈'에 더해져요)
   { date = 2026-01-20, name = "설거지 일주일", amount = 3000 },
   { date = 2026-07-15, name = "가격 비교 장보기", amount = 3500 },
   { date = 2026-08-10, name = "설거지 일주일", amount = 3000 },
@@ -129,13 +129,13 @@ bill_until_today = 79500
 
 
 # ═════════════════════════════════════════════════════════════
-# 가족 B — 바다 (기록 완료: 만 19세, 확인서 발급 가능)
+# 가족 B — 뽀로로 (기록 완료: 만 19세, 확인서 발급 가능)
 # ═════════════════════════════════════════════════════════════
 [[family]]
 id = "B"
-child_name = "바다"
+child_name = "뽀로로"
 child_birth = 2007-10-03
-parent_name = "박서연"
+parent_name = "뽀로로 엄마"
 child_account = "3333-02-7788"
 parent_account = "3333-02-5566"
 first_cycle = "2024-07"
@@ -169,7 +169,7 @@ result = "부족"
 shortfall = 4600
 resolve = "스스로"
 resolve_days = 3            # 결제일에서 며칠 뒤에 갚았는지
-resolve_from = "이번 달 용돈"   # 10/27 미션 보상으로 받은 돈에서
+resolve_from = "이번 달 쓸 수 있는 돈"   # 10/27 미션 보상으로 받은 돈에서
 note = "시험 끝나고 많이 썼어요. 분리수거 미션으로 번 돈으로 3일 만에 갚음"
 
 [[family.month]]
@@ -178,8 +178,8 @@ result = "부족"
 shortfall = 7200
 resolve = "스스로"
 resolve_days = 5
-resolve_from = "모은 돈"
-note = "방학 중 지출. 모은 돈으로 5일 만에 갚음"
+resolve_from = "지난달까지 남은 돈"
+note = "방학 중 지출. 지난달까지 남은 돈으로 5일 만에 갚음"
 
 [[family.month]]
 cycle = "2025-06"
@@ -187,8 +187,8 @@ result = "부족"
 shortfall = 3800
 resolve = "스스로"
 resolve_days = 5
-resolve_from = "모은 돈"
-note = "고3 1학기 기말 뒤. 모은 돈으로 5일 만에 갚음"
+resolve_from = "지난달까지 남은 돈"
+note = "고3 1학기 기말 뒤. 지난달까지 남은 돈으로 5일 만에 갚음"
 
 [family.expect]
 paid_months = 24
